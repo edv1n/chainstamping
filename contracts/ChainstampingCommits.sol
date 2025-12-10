@@ -1,15 +1,11 @@
 pragma solidity ^0.8.0;
 
-import {CommitKeyGenerator} from "./CommitKeyGenerator.sol";
+import {Commit} from "./Commit.sol";
 
 contract ChainstampingCommits {
-    CommitKeyGenerator _CommitKeyGenerator = new CommitKeyGenerator();
-
     event CommitTimestamped(
         bytes32 indexed key,
-        string indexed commit,
-        string tree,
-        string[] parents,
+        Commit indexed commit,
         uint256 timestamp
     );
 
@@ -17,12 +13,8 @@ contract ChainstampingCommits {
     mapping(bytes32 => uint256) internal _stamped;
 
     // timestamp timestamps a commit with its metadata
-    function timestamp(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
-    ) public returns (uint256) {
-        bytes32 key = _CommitKeyGenerator.generate(commit, tree, parents);
+    function timestamp(Commit calldata commit) public returns (uint256) {
+        bytes32 key = commit.key();
 
         require(_stamped[key] == 0, "Commit already timestamped");
 
@@ -30,18 +22,14 @@ contract ChainstampingCommits {
 
         _stamped[key] = _now;
 
-        emit CommitTimestamped(key, commit, tree, parents, _now);
+        emit CommitTimestamped(key, commit, _now);
 
         return _now;
     }
 
     // timestamped returns the timestamp of a previously timestamped commit
-    function timestamped(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
-    ) public view returns (uint256) {
-        bytes32 key = _CommitKeyGenerator.generate(commit, tree, parents);
+    function timestamped(Commit calldata commit) public view returns (uint256) {
+        bytes32 key = commit.key();
 
         uint256 _timestamp = _stamped[key];
 

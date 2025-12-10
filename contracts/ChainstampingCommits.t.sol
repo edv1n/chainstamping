@@ -1,105 +1,112 @@
 pragma solidity ^0.8.0;
 
+import "hardhat/console.sol";
+
 import {ChainstampingCommits} from "./ChainstampingCommits.sol";
-import {CommitKeyGenerator} from "./CommitKeyGenerator.sol";
+import {Commit} from "./Commit.sol";
 import {Test} from "forge-std/Test.sol";
 
 contract ChainstampingCommitsTest is Test {
-    ChainstampingCommits c = new ChainstampingCommits();
-    CommitKeyGenerator _CommitKeyGenerator = new CommitKeyGenerator();
+    ChainstampingCommits c;
 
     function setUp() public {
         c = new ChainstampingCommits();
     }
 
-    function test_timestamp(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
-    ) public {
-        if (bytes(commit).length == 0) {
+    function test_timestamp(Commit memory commit) public {
+        console.log("Testing commit:", commit.hash);
+
+        if (bytes(commit.hash).length == 0) {
             // Skip commit with empty hash
+            console.log("Skipping commit with empty hash");
+
             return;
         }
 
-        bytes32 key = _CommitKeyGenerator.generate(commit, tree, parents);
+        bytes32 key = commit.key();
 
         uint256 _now = block.timestamp;
 
         vm.expectEmit();
-        emit ChainstampingCommits.CommitTimestamped(
-            key,
-            commit,
-            tree,
-            parents,
-            _now
-        );
+        emit ChainstampingCommits.CommitTimestamped(key, commit, _now);
 
-        uint256 timestamped = c.timestamp(commit, parents, tree);
+        uint256 timestamped = c.timestamp(commit);
 
         assertLt(0, timestamped, "Timestamp should be greater than 0");
         assertEq(_now, timestamped, "Timestamp should match block timestamp");
+
+        console.log("Timestamped commit", commit.hash, "at time", timestamped);
     }
 
-    function test_timestamped(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
-    ) public {
-        if (bytes(commit).length == 0) {
+    function test_timestamped(Commit memory commit) public {
+        console.log("Testing commit:", commit.hash);
+
+        if (bytes(commit.hash).length == 0) {
             // Skip commit with empty hash
+            console.log("Skipping commit with empty hash");
+
             return;
         }
 
-        bytes32 key = _CommitKeyGenerator.generate(commit, tree, parents);
+        bytes32 key = commit.key();
 
         vm.expectEmit();
         emit ChainstampingCommits.CommitTimestamped(
             key,
             commit,
-            tree,
-            parents,
             block.timestamp
         );
 
-        uint256 timestamped = c.timestamp(commit, parents, tree);
-        uint256 retrievedTimestamp = c.timestamped(commit, parents, tree);
+        uint256 timestamped = c.timestamp(commit);
+        console.log("Timestamped commit", commit.hash, "at time", timestamped);
+
+        uint256 retrievedTimestamp = c.timestamped(commit);
 
         assertEq(
             retrievedTimestamp,
             timestamped,
             "Retrieved timestamp should match the original timestamp"
         );
+
+        console.log(
+            "Retrieved timestamp for commit",
+            commit.hash,
+            ":",
+            retrievedTimestamp
+        );
     }
 
-    function test_TimestampWithEmptyCommitHashShouldFail(
-        string[] calldata parents,
-        string calldata tree
+    function test_timestamp_EmptyCommitHashShouldFail(
+        Commit memory commit
     ) public {
-        string memory commit = "";
+        commit.hash = "";
+
+        console.log("Testing commit:", commit.hash);
 
         // Attempt to timestamp with empty commit hash
-        try c.timestamp(commit, parents, tree) {
+        try c.timestamp(commit) {
             revert("Timestamping with empty commit hash should have failed");
         } catch Error(string memory reason) {
             assertEq(reason, "Invalid commit hash", "Unexpected error message");
         }
     }
 
-    function test_DoubleTimestampingShouldFail(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
+    function test_timestamp_DoubleTimestampingShouldFail(
+        Commit memory commit
     ) public {
-        if (bytes(commit).length == 0) {
+        console.log("Testing commit:", commit.hash);
+
+        if (bytes(commit.hash).length == 0) {
             // Skip commit with empty hash
+            console.log("Skipping commit with empty hash");
+
             return;
         }
 
-        c.timestamp(commit, parents, tree);
+        c.timestamp(commit);
 
         // Attempt to timestamp the same commit again
-        try c.timestamp(commit, parents, tree) {
+        try c.timestamp(commit) {
             revert("Double timestamping should have failed");
         } catch Error(string memory reason) {
             assertEq(
@@ -110,18 +117,20 @@ contract ChainstampingCommitsTest is Test {
         }
     }
 
-    function test_TimestampedNonexistentCommitShouldFail(
-        string calldata commit,
-        string[] calldata parents,
-        string calldata tree
+    function test_timestamped_NonexistentCommitShouldFail(
+        Commit memory commit
     ) public view {
-        if (bytes(commit).length == 0) {
+        console.log("Testing commit:", commit.hash);
+
+        if (bytes(commit.hash).length == 0) {
             // Skip commit with empty hash
+            console.log("Skipping commit with empty hash");
+
             return;
         }
 
         // Attempt to retrieve timestamp for a commit that hasn't been timestamped
-        try c.timestamped(commit, parents, tree) {
+        try c.timestamped(commit) {
             revert(
                 "Retrieving timestamp for nonexistent commit should have failed"
             );
