@@ -1,17 +1,17 @@
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 import {Commit} from "./Commit.sol";
 import {Test} from "forge-std/Test.sol";
+
+import {console} from "hardhat/console.sol";
 
 contract CommitTest is Test {
     function test_key(Commit memory commit) public pure {
         console.log("Testing commit:", commit.hash);
 
-        if (bytes(commit.hash).length == 0) {
-            // Skip commit with empty hash
-            console.log("Skipping commit with empty hash");
+        if (!commit.valid()) {
+            // Skip invalid commit
+            console.log("Skipping invalid commit");
 
             return;
         }
@@ -34,7 +34,20 @@ contract CommitTest is Test {
         try commit.key() {
             revert("Generating key with empty commit hash should have failed");
         } catch Error(string memory reason) {
-            assertEq(reason, "Invalid commit hash", "Unexpected error message");
+            assertEq(reason, "Invalid commit", "Unexpected error message");
+        }
+    }
+
+    function test_key_WithEmptyTreeHashShouldFail(
+        Commit memory commit
+    ) public pure {
+        commit.tree = "";
+
+        // Attempt to generate key with empty tree hash
+        try commit.key() {
+            revert("Generating key with empty tree hash should have failed");
+        } catch Error(string memory reason) {
+            assertEq(reason, "Invalid commit", "Unexpected error message");
         }
     }
 }

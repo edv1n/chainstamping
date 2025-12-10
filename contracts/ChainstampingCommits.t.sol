@@ -1,10 +1,10 @@
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 import {ChainstampingCommits} from "./ChainstampingCommits.sol";
 import {Commit} from "./Commit.sol";
 import {Test} from "forge-std/Test.sol";
+
+import {console} from "hardhat/console.sol";
 
 contract ChainstampingCommitsTest is Test {
     ChainstampingCommits c;
@@ -16,9 +16,9 @@ contract ChainstampingCommitsTest is Test {
     function test_timestamp(Commit memory commit) public {
         console.log("Testing commit:", commit.hash);
 
-        if (bytes(commit.hash).length == 0) {
-            // Skip commit with empty hash
-            console.log("Skipping commit with empty hash");
+        if (!commit.valid()) {
+            // Skip invalid commit
+            console.log("Skipping invalid commit");
 
             return;
         }
@@ -41,9 +41,9 @@ contract ChainstampingCommitsTest is Test {
     function test_timestamped(Commit memory commit) public {
         console.log("Testing commit:", commit.hash);
 
-        if (bytes(commit.hash).length == 0) {
-            // Skip commit with empty hash
-            console.log("Skipping commit with empty hash");
+        if (!commit.valid()) {
+            // Skip invalid commit
+            console.log("Skipping invalid commit");
 
             return;
         }
@@ -87,7 +87,22 @@ contract ChainstampingCommitsTest is Test {
         try c.timestamp(commit) {
             revert("Timestamping with empty commit hash should have failed");
         } catch Error(string memory reason) {
-            assertEq(reason, "Invalid commit hash", "Unexpected error message");
+            assertEq(reason, "Invalid commit", "Unexpected error message");
+        }
+    }
+
+    function test_timestamp_EmptyTreeHashShouldFail(
+        Commit memory commit
+    ) public {
+        commit.tree = "";
+
+        console.log("Testing commit:", commit.hash);
+
+        // Attempt to timestamp with empty tree hash
+        try c.timestamp(commit) {
+            revert("Timestamping with empty tree hash should have failed");
+        } catch Error(string memory reason) {
+            assertEq(reason, "Invalid commit", "Unexpected error message");
         }
     }
 
@@ -96,9 +111,9 @@ contract ChainstampingCommitsTest is Test {
     ) public {
         console.log("Testing commit:", commit.hash);
 
-        if (bytes(commit.hash).length == 0) {
-            // Skip commit with empty hash
-            console.log("Skipping commit with empty hash");
+        if (!commit.valid()) {
+            // Skip invalid commit
+            console.log("Skipping invalid commit");
 
             return;
         }
@@ -122,9 +137,9 @@ contract ChainstampingCommitsTest is Test {
     ) public view {
         console.log("Testing commit:", commit.hash);
 
-        if (bytes(commit.hash).length == 0) {
-            // Skip commit with empty hash
-            console.log("Skipping commit with empty hash");
+        if (!commit.valid()) {
+            // Skip invalid commit
+            console.log("Skipping invalid commit");
 
             return;
         }
