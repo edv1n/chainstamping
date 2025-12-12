@@ -70,6 +70,12 @@ To verify a commit's timestamp, the following steps are performed:
 - The smart contract enforces validation checks to ensure that neither the commit hash nor the tree hash are empty, further enhancing security.
 - No direct write access to the timestamp storage is provided, ensuring that only commits with sufficient metadata can be timestamped through the defined interface.
 
+## Contracts
+
+Smart contracts are implemented in Solidity and can be found in the `contracts` directory. 
+
+The main contracts is `ChainstampingCommits.sol`, which handles the timestamping and verification of git commits.
+
 ## Testing
 
 The project includes comprehensive tests to ensure the correctness and security of the timestamping and verification processes. The tests cover various scenarios, including valid commits, commits with missing metadata, and edge cases.
