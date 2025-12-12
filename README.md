@@ -82,6 +82,16 @@ The project includes comprehensive tests to ensure the correctness and security 
 
 The tests are implemented using the hardhat framework and can be found in the `contracts` directory, specifically in the `ChainstampingCommits.t.sol` and `Commit.t.sol` files.
 
+### Running Tests
+
+To run the tests, one need to have `Hardhat` installed. The installation instructions can be found in the [Hardhat documentation](https://hardhat.org/getting-started/).
+
+Once Hardhat is installed, the tests can be run using the following command on the root of the repo.
+
+```bash
+npx hardhat test
+```
+
 ## Related Works
 
 - [OriginStamp](https://originstamp.com/en/solutions/timestamp): A service that provides blockchain-based timestamping for documents and files.
