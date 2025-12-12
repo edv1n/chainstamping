@@ -29,7 +29,7 @@ Chainstamping is a smart contract-based solution that allows developers to times
 
 ### To verify a git commit timestamp
 
-1. Use the `timestamped` function to retrive the timestamp of a commit by providing its metadata.
+1. Use the `timestamped` function to retrieve the timestamp of a commit by providing its metadata.
 1. Verify the commit hash and the related metadata using git tools.
 
 ## Design
