@@ -92,6 +92,12 @@ Once Hardhat is installed, the tests can be run using the following command on t
 npx hardhat test
 ```
 
+To run tests with coverage report, use the following command:
+
+```bash
+npx hardhat test --coverage
+```
+
 ## Related Works
 
 - [OriginStamp](https://originstamp.com/en/solutions/timestamp): A service that provides blockchain-based timestamping for documents and files.
