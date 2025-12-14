@@ -6,19 +6,19 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/edv1n/chainstamping/internal/pkg/chainstampingcommits"
+	"github.com/edv1n/chainstamping/internal/pkg/chainstamper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type Service interface {
-	Timestamp(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error)
-	Timestamped(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error)
+	StampCommit(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error)
+	GetTimestamp(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error)
 }
 
 type service struct {
 	contractAddress common.Address
-	contract        *chainstampingcommits.ChainstampingCommits
+	contract        *chainstamper.Chainstamper
 	instance        *bind.BoundContract
 	ec              bind.Backend
 	auth            *bind.TransactOpts
@@ -27,7 +27,7 @@ type service struct {
 }
 
 func NewService(ec bind.Backend, chainId *big.Int, contractAddress common.Address, auth *bind.TransactOpts, ta TxAgent) Service {
-	contract := chainstampingcommits.NewChainstampingCommits()
+	contract := chainstamper.NewChainstamper()
 
 	instance := contract.Instance(ec, contractAddress)
 
@@ -41,8 +41,8 @@ func NewService(ec bind.Backend, chainId *big.Int, contractAddress common.Addres
 	}
 }
 
-func (s *service) Timestamp(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error) {
-	ts, err := s.Timestamped(ctx, commitHash, tree, parents)
+func (s *service) StampCommit(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error) {
+	ts, err := s.GetTimestamp(ctx, commitHash, tree, parents)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get timestamp: %w", err)
 	}
@@ -51,7 +51,7 @@ func (s *service) Timestamp(ctx context.Context, commitHash string, tree string,
 		return nil, ErrCommitAlreadyTimestamped
 	}
 
-	evc := make(chan *chainstampingcommits.ChainstampingCommitsCommitTimestamped)
+	evc := make(chan *chainstamper.ChainstamperCommitTimestamped)
 
 	sub, err := bind.WatchEvents(s.instance, &bind.WatchOpts{Context: ctx}, s.contract.UnpackCommitTimestampedEvent, evc)
 	if err != nil {
@@ -78,8 +78,8 @@ func (s *service) Timestamp(ctx context.Context, commitHash string, tree string,
 	}
 }
 
-func (s *service) Timestamped(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error) {
-	data, err := s.contract.TryPackTimestamped(chainstampingcommits.Commit{
+func (s *service) GetTimestamp(ctx context.Context, commitHash string, tree string, parents []string) (*time.Time, error) {
+	data, err := s.contract.TryPackGetTimestamp(chainstamper.Commit{
 		Hash:    commitHash,
 		Tree:    tree,
 		Parents: parents,
@@ -88,7 +88,7 @@ func (s *service) Timestamped(ctx context.Context, commitHash string, tree strin
 		return nil, fmt.Errorf("failed to pack timestamped call: %w", err)
 	}
 
-	resp, err := bind.Call(s.instance, &bind.CallOpts{Context: ctx}, data, s.contract.UnpackTimestamped)
+	resp, err := bind.Call(s.instance, &bind.CallOpts{Context: ctx}, data, s.contract.UnpackGetTimestamp)
 	if err != nil {
 		if err.Error() == "execution reverted: Commit not timestamped" {
 			return nil, nil

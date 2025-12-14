@@ -2,12 +2,15 @@ package chainstamp
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"testing"
+	"time"
 
-	"github.com/edv1n/chainstamping/internal/pkg/chainstampingcommits"
+	"github.com/edv1n/chainstamping/internal/pkg/chainstamper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind/v2"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -22,7 +25,7 @@ type testTxAgent struct {
 	t        *testing.T
 	instance *bind.BoundContract
 	auth     *bind.TransactOpts
-	contract *chainstampingcommits.ChainstampingCommits
+	contract *chainstamper.Chainstamper
 	sim      *simulated.Backend
 }
 
@@ -31,7 +34,7 @@ func newTestTxAgent(t *testing.T, instance *bind.BoundContract, auth *bind.Trans
 		t:        t,
 		instance: instance,
 		auth:     auth,
-		contract: chainstampingcommits.NewChainstampingCommits(),
+		contract: chainstamper.NewChainstamper(),
 		sim:      sim,
 	}
 }
@@ -39,7 +42,7 @@ func newTestTxAgent(t *testing.T, instance *bind.BoundContract, auth *bind.Trans
 func (ta *testTxAgent) Timestamp(ctx context.Context, chainId *big.Int, commitHash string, tree string, parents []string) error {
 	ta.t.Logf("testTxAgent.Timestamp called with chainId=%s, commitHash=%s, tree=%s, parents=%v", chainId.String(), commitHash, tree, parents)
 
-	tx, err := bind.Transact(ta.instance, ta.auth, ta.contract.PackTimestamp(chainstampingcommits.Commit{
+	tx, err := bind.Transact(ta.instance, ta.auth, ta.contract.PackStampCommit(chainstamper.Commit{
 		Hash:    commitHash,
 		Tree:    tree,
 		Parents: parents,
@@ -63,21 +66,27 @@ func (ta *testTxAgent) Timestamp(ctx context.Context, chainId *big.Int, commitHa
 	return nil
 }
 
+func genHash() string {
+	tStr := time.Now().String()
+	sum := sha1.Sum([]byte(tStr))
+	return hex.EncodeToString(sum[:])
+}
+
 func TestService(t *testing.T) {
 	sim, contractAddress, auth := newContractSimulator(t, testChainId)
 
-	contract := chainstampingcommits.NewChainstampingCommits()
+	contract := chainstamper.NewChainstamper()
 
 	instance := contract.Instance(sim.Client(), contractAddress)
 	ta := newTestTxAgent(t, instance, auth, sim)
 
 	t.Run("Timestamp", func(t *testing.T) {
 		s := NewService(sim.Client(), testChainId, contractAddress, auth, ta)
-		commitHash := "abc123"
-		tree := "treehash"
-		parents := []string{"parent1", "parent2"}
+		commitHash := genHash()
+		tree := genHash()
+		parents := []string{genHash(), genHash()}
 
-		ts, err := s.Timestamp(t.Context(), commitHash, tree, parents)
+		ts, err := s.StampCommit(t.Context(), commitHash, tree, parents)
 		if err != nil {
 			for err := err; err != nil; err = errors.Unwrap(err) {
 				t.Logf("%T: %+v", err, err)
@@ -94,11 +103,11 @@ func TestService(t *testing.T) {
 
 	t.Run("Timestamped", func(t *testing.T) {
 		s := NewService(sim.Client(), testChainId, contractAddress, auth, ta)
-		commitHash := "abc1234"
-		tree := "treehash"
-		parents := []string{"parent1", "parent2"}
+		commitHash := genHash()
+		tree := genHash()
+		parents := []string{genHash(), genHash()}
 
-		ts, err := s.Timestamp(t.Context(), commitHash, tree, parents)
+		ts, err := s.StampCommit(t.Context(), commitHash, tree, parents)
 		if err != nil {
 			for err := err; err != nil; err = errors.Unwrap(err) {
 				t.Logf("%T: %+v", err, err)
@@ -107,7 +116,7 @@ func TestService(t *testing.T) {
 			t.Fatalf("Timestamp failed: %v", err)
 		}
 
-		tsed, err := s.Timestamped(t.Context(), commitHash, tree, parents)
+		tsed, err := s.GetTimestamp(t.Context(), commitHash, tree, parents)
 		if err != nil {
 			t.Fatalf("Timestamped failed: %v", err)
 		}
@@ -136,9 +145,9 @@ func newContractSimulator(t *testing.T, chainID *big.Int) (sim *simulated.Backen
 		auth.From: {Balance: big.NewInt(9e18)},
 	})
 
-	// set up params to deploy an instance of the ChainstampingCommits contract
+	// set up params to deploy an instance of the Chainstamper contract
 	deployParams := bind.DeploymentParams{
-		Contracts: []*bind.MetaData{&chainstampingcommits.ChainstampingCommitsMetaData},
+		Contracts: []*bind.MetaData{&chainstamper.ChainstamperMetaData},
 	}
 
 	// use the default deployer: it simply creates, signs and submits the deployment transactions
@@ -150,7 +159,7 @@ func newContractSimulator(t *testing.T, chainID *big.Int) (sim *simulated.Backen
 		t.Fatalf("error submitting contract: %v", err)
 	}
 
-	address, tx := deployRes.Addresses[chainstampingcommits.ChainstampingCommitsMetaData.ID], deployRes.Txs[chainstampingcommits.ChainstampingCommitsMetaData.ID]
+	address, tx := deployRes.Addresses[chainstamper.ChainstamperMetaData.ID], deployRes.Txs[chainstamper.ChainstamperMetaData.ID]
 	contractAddress = address
 
 	// call Commit to make the simulated backend mine a block

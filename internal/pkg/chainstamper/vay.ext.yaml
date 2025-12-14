@@ -1,0 +1,5 @@
+vay:
+  generate:
+    from: go
+    run: |
+      solc --combined-json abi,bin ./contracts/Chainstamper.sol | go tool github.com/ethereum/go-ethereum/cmd/abigen --v2 --combined-json=- --out=generated.go --pkg=chainstamper --type Chainstamper
