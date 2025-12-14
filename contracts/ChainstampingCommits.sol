@@ -5,7 +5,8 @@ import {Commit} from "./Commit.sol";
 contract ChainstampingCommits {
     event CommitTimestamped(
         bytes32 indexed key,
-        Commit indexed commit,
+        string indexed hash,
+        Commit commit,
         uint256 timestamp
     );
 
@@ -22,7 +23,7 @@ contract ChainstampingCommits {
 
         _stamped[key] = _now;
 
-        emit CommitTimestamped(key, commit, _now);
+        emit CommitTimestamped(key, commit.hash, commit, _now);
 
         return _now;
     }

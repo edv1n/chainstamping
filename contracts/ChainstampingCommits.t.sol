@@ -28,7 +28,12 @@ contract ChainstampingCommitsTest is Test {
         uint256 _now = block.timestamp;
 
         vm.expectEmit();
-        emit ChainstampingCommits.CommitTimestamped(key, commit, _now);
+        emit ChainstampingCommits.CommitTimestamped(
+            key,
+            commit.hash,
+            commit,
+            _now
+        );
 
         uint256 timestamped = c.timestamp(commit);
 
@@ -53,6 +58,7 @@ contract ChainstampingCommitsTest is Test {
         vm.expectEmit();
         emit ChainstampingCommits.CommitTimestamped(
             key,
+            commit.hash,
             commit,
             block.timestamp
         );
