@@ -1,19 +1,19 @@
 pragma solidity ^0.8.0;
 
-import {ChainstampingCommits} from "./ChainstampingCommits.sol";
+import {Chainstamper} from "./Chainstamper.sol";
 import {Commit} from "./Commit.sol";
 import {Test} from "forge-std/Test.sol";
 
 import {console} from "hardhat/console.sol";
 
-contract ChainstampingCommitsTest is Test {
-    ChainstampingCommits c;
+contract ChainstamperTest is Test {
+    Chainstamper c;
 
     function setUp() public {
-        c = new ChainstampingCommits();
+        c = new Chainstamper();
     }
 
-    function test_timestamp(Commit memory commit) public {
+    function test_stampCommit(Commit memory commit) public {
         console.log("Testing commit:", commit.hash);
 
         if (!commit.valid()) {
@@ -28,14 +28,9 @@ contract ChainstampingCommitsTest is Test {
         uint256 _now = block.timestamp;
 
         vm.expectEmit();
-        emit ChainstampingCommits.CommitTimestamped(
-            key,
-            commit.hash,
-            commit,
-            _now
-        );
+        emit Chainstamper.CommitTimestamped(key, commit.hash, commit, _now);
 
-        uint256 timestamped = c.timestamp(commit);
+        uint256 timestamped = c.stampCommit(commit);
 
         assertLt(0, timestamped, "Timestamp should be greater than 0");
         assertEq(_now, timestamped, "Timestamp should match block timestamp");
@@ -43,7 +38,7 @@ contract ChainstampingCommitsTest is Test {
         console.log("Timestamped commit", commit.hash, "at time", timestamped);
     }
 
-    function test_timestamped(Commit memory commit) public {
+    function test_getTimestamp(Commit memory commit) public {
         console.log("Testing commit:", commit.hash);
 
         if (!commit.valid()) {
@@ -56,17 +51,17 @@ contract ChainstampingCommitsTest is Test {
         bytes32 key = commit.key();
 
         vm.expectEmit();
-        emit ChainstampingCommits.CommitTimestamped(
+        emit Chainstamper.CommitTimestamped(
             key,
             commit.hash,
             commit,
             block.timestamp
         );
 
-        uint256 timestamped = c.timestamp(commit);
+        uint256 timestamped = c.stampCommit(commit);
         console.log("Timestamped commit", commit.hash, "at time", timestamped);
 
-        uint256 retrievedTimestamp = c.timestamped(commit);
+        uint256 retrievedTimestamp = c.getTimestamp(commit);
 
         assertEq(
             retrievedTimestamp,
@@ -82,7 +77,7 @@ contract ChainstampingCommitsTest is Test {
         );
     }
 
-    function test_timestamp_EmptyCommitHashShouldFail(
+    function test_stampCommit_EmptyCommitHashShouldFail(
         Commit memory commit
     ) public {
         commit.hash = "";
@@ -90,14 +85,14 @@ contract ChainstampingCommitsTest is Test {
         console.log("Testing commit:", commit.hash);
 
         // Attempt to timestamp with empty commit hash
-        try c.timestamp(commit) {
+        try c.stampCommit(commit) {
             revert("Timestamping with empty commit hash should have failed");
         } catch Error(string memory reason) {
             assertEq(reason, "Invalid commit", "Unexpected error message");
         }
     }
 
-    function test_timestamp_EmptyTreeHashShouldFail(
+    function test_stampCommit_EmptyTreeHashShouldFail(
         Commit memory commit
     ) public {
         commit.tree = "";
@@ -105,14 +100,14 @@ contract ChainstampingCommitsTest is Test {
         console.log("Testing commit:", commit.hash);
 
         // Attempt to timestamp with empty tree hash
-        try c.timestamp(commit) {
+        try c.stampCommit(commit) {
             revert("Timestamping with empty tree hash should have failed");
         } catch Error(string memory reason) {
             assertEq(reason, "Invalid commit", "Unexpected error message");
         }
     }
 
-    function test_timestamp_DoubleTimestampingShouldFail(
+    function test_stampCommit_DoubleTimestampingShouldFail(
         Commit memory commit
     ) public {
         console.log("Testing commit:", commit.hash);
@@ -124,10 +119,10 @@ contract ChainstampingCommitsTest is Test {
             return;
         }
 
-        c.timestamp(commit);
+        c.stampCommit(commit);
 
         // Attempt to timestamp the same commit again
-        try c.timestamp(commit) {
+        try c.stampCommit(commit) {
             revert("Double timestamping should have failed");
         } catch Error(string memory reason) {
             assertEq(
@@ -138,7 +133,7 @@ contract ChainstampingCommitsTest is Test {
         }
     }
 
-    function test_timestamped_NonexistentCommitShouldFail(
+    function test_getTimestamp_NonexistentCommitShouldFail(
         Commit memory commit
     ) public view {
         console.log("Testing commit:", commit.hash);
@@ -151,7 +146,7 @@ contract ChainstampingCommitsTest is Test {
         }
 
         // Attempt to retrieve timestamp for a commit that hasn't been timestamped
-        try c.timestamped(commit) {
+        try c.getTimestamp(commit) {
             revert(
                 "Retrieving timestamp for nonexistent commit should have failed"
             );

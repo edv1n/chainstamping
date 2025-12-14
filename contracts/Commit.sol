@@ -16,6 +16,7 @@ library CommitLibrary {
     }
 
     function valid(Commit calldata commit) public pure returns (bool) {
-        return bytes(commit.hash).length != 0 && bytes(commit.tree).length != 0;
+        return
+            bytes(commit.hash).length == 40 && bytes(commit.tree).length == 40;
     }
 }
