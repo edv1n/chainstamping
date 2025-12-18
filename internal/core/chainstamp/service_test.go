@@ -39,8 +39,8 @@ func newTestTxAgent(t *testing.T, instance *bind.BoundContract, auth *bind.Trans
 	}
 }
 
-func (ta *testTxAgent) Timestamp(ctx context.Context, chainId *big.Int, commitHash string, tree string, parents []string) error {
-	ta.t.Logf("testTxAgent.Timestamp called with chainId=%s, commitHash=%s, tree=%s, parents=%v", chainId.String(), commitHash, tree, parents)
+func (ta *testTxAgent) Timestamp(ctx context.Context, chainId *big.Int, contract common.Address, commitHash string, tree string, parents []string) error {
+	ta.t.Logf("testTxAgent.Timestamp called with chainId=%s, contract=%s, commitHash=%s, tree=%s, parents=%v", chainId.String(), contract.Hex(), commitHash, tree, parents)
 
 	tx, err := bind.Transact(ta.instance, ta.auth, ta.contract.PackStampCommit(chainstamper.Commit{
 		Hash:    commitHash,

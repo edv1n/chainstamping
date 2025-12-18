@@ -38,6 +38,7 @@ func NewService(ec bind.Backend, chainId *big.Int, contractAddress common.Addres
 		ec:              ec,
 		auth:            auth,
 		ta:              ta,
+		chainId:         chainId,
 	}
 }
 
@@ -59,7 +60,7 @@ func (s *service) StampCommit(ctx context.Context, commitHash string, tree strin
 	}
 	defer sub.Unsubscribe()
 
-	if err := s.ta.Timestamp(ctx, s.chainId, commitHash, tree, parents); err != nil {
+	if err := s.ta.Timestamp(ctx, s.chainId, s.contractAddress, commitHash, tree, parents); err != nil {
 		return nil, fmt.Errorf("failed to timestamp: %w", err)
 	}
 

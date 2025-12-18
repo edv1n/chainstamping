@@ -42,7 +42,14 @@ func (s *service) GetCurrentCommit() (*Commit, error) {
 	return s.GetCommit(commitHash)
 }
 
-func (s *service) GetCommit(commitHash string) (*Commit, error) {
+func (s *service) GetCommit(commitHash string) (c *Commit, err error) {
+	if commitHash == "HEAD" {
+		commitHash, err = s.getHEADCommitHash()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get HEAD commit hash: %w", err)
+		}
+	}
+
 	tree, err := s.getTreeFromRevParseOutput(commitHash)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get commit tree: %w", err)
