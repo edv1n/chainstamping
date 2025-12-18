@@ -1,0 +1,6 @@
+vay:
+  run:
+    from: node
+    expose:
+      - 3000
+    run: npm run dev -- --host
