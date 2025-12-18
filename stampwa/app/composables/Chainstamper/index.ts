@@ -5,18 +5,18 @@ import metadata from './contracts/Chainstamper.sol/Chainstamper.json';
 import { th } from '@nuxt/ui/runtime/locale/index.js';
 
 
-export default function (web3: Web3 = new Web3((window as any).ethereum)): Chainstamper {
-    return new Chainstamper(web3);
+export default function (web3: Web3 = new Web3((window as any).ethereum), contractAddress: string): Chainstamper {
+    return new Chainstamper(web3, contractAddress);
 }
 
 class Chainstamper {
     // Chainstamper methods and properties would go here
 
-    contractAddress: string = '0x07A7859491bfDfD10028C965C8C32f8BE88078B7'
+    contractAddress: string = ''
     web3: Web3 = new Web3((window as any).ethereum)
     contract: Contract<Chainstamper$Type["abi"]>
 
-    constructor(web3: Web3, contractAddress?: string) {
+    constructor(web3: Web3, contractAddress: string) {
         this.web3 = web3;
 
         if (contractAddress) {
@@ -67,6 +67,11 @@ class Chainstamper {
             let timestamp: Uint256 = await this.contract.methods.getTimestamp({ hash, tree, parents }).call();
             return timestamp;
         } catch (error) {
+            let { innerError: { message } } = JSON.parse(JSON.stringify(error));
+            if (message == "execution reverted: Commit not timestamped") {
+                return "" as Uint256;
+            }
+
             throw new Error(`Failed to get timestamp: ${error}`);
         }
     }
